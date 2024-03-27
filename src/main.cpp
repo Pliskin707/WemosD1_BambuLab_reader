@@ -5,6 +5,7 @@
 #include "ota/ota.hpp"
 #include "projutils/projutils.hpp"
 #include "config.hpp"
+#include "bambu_mqtt/bambu_mqtt.hpp"
 
 using namespace pliskin;
 
@@ -19,8 +20,15 @@ using namespace pliskin;
  */
 #include "../../../../../../wifiauth2.h"
 
+/** Printer info
+ * 
+ * this file can be created by copying or renaming the \e printer_info_template.hpp 
+ * and filling in the required information
+ */
+#include "../printer_info.hpp"
+
 static bool mDNS_init_ok = false;
-WiFiClient client;
+static bambu_printer printer;
 
 void setup() {
   #ifndef DEBUG_PRINT
@@ -85,11 +93,18 @@ void loop() {
 
     if (connected)
     {
-        // TODO
+      if (!printer.is_connected())
+      {
+        const auto conn_result = printer.connect(PRINTER_IP, PRINTER_SN, PRINTER_AUTH);
+        dprintf("Connecting %s\n", (conn_result ? "was successful" : "failed"));
+      }      
     }
     else
       WiFi.reconnect();
   }
+
+  if (connected)
+    printer.loop();
 
   yield();
 }
