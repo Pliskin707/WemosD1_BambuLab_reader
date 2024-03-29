@@ -79,7 +79,7 @@ void convertFromJson (JsonVariantConst src, bambu_report_t &dst)
     // read the status infos
     dst.state.name              = src[F("gcode_state")].as<String>();                           // "FINISH", "RUNNING"
     dst.state.progress_percent  = src[F("mc_percent")]          | dst.state.progress_percent;   // 100
-    dst.state.remaining_seconds = src[F("mc_remaining_time")]   | dst.state.remaining_seconds;  // 0
+    dst.state.remaining_minutes = src[F("mc_remaining_time")]   | dst.state.remaining_minutes;  // 0
 
     return;
 }
