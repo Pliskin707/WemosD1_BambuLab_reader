@@ -2,9 +2,9 @@
 #define __BAMBU_MQTT_HPP__
 
 #include <Arduino.h>
+#include "bambu_mqtt_types.hpp"
 
 class bambu_printer_data;
-
 class bambu_printer
 {
     private:
