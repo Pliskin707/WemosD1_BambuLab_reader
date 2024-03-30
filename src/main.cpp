@@ -2,10 +2,13 @@
 
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
+#include <Wire.h>
+#include <U8g2lib.h>
 #include "ota/ota.hpp"
 #include "projutils/projutils.hpp"
 #include "config.hpp"
 #include "bambu_mqtt/bambu_mqtt.hpp"
+#include "rgb_leds/rgb_leds.hpp"
 
 using namespace pliskin;
 
@@ -29,23 +32,22 @@ using namespace pliskin;
 
 static bool mDNS_init_ok = false;
 static bambu_printer printer;
+static rgb_leds leds(RGBLED_NUM); // for now only the DMA method is supported -> no need to define a pin (always GPIO3 aka "RX" on D1)
 
 void setup() {
   #ifndef DEBUG_PRINT
   pinMode(LEDPIN, OUTPUT);
   #else
-  Serial.begin(115200);
+  // initialize TX only since the RX pin (with its resistor) is used as 
+  // data pin for the LEDs in DMA mode
+  Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
   #endif
 
   // Wifi
-  IPAddress local_IP(192, 168, 0, 50);
-  IPAddress gateway(192, 168, 0, 1);
-  IPAddress subnet(255, 255, 255, 0);
-  IPAddress dns(1, 1, 1, 1);
   WiFi.hostname(DEVICENAME);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  wifi_set_sleep_type(NONE_SLEEP_T);
+  // wifi_set_sleep_type(NONE_SLEEP_T);
 
   wl_status_t wstat;
   while (true)
@@ -66,11 +68,14 @@ void setup() {
 
   // OTA
   ota::begin(DEVICENAME);
+
+  leds.Begin();
 }
 
 void loop() {
   const uint32_t time = millis();
   static uint32_t next = 0;
+  static uint32_t last_report_time = 0;
 
   // Wifi status
   const bool connected = WiFi.isConnected();
@@ -104,7 +109,15 @@ void loop() {
   }
 
   if (connected)
+  {
     printer.loop();
+    const auto& report = printer.report();
+    if (report.last_update != last_report_time)
+    {
+      last_report_time = report.last_update;
+      leds.update_with_report(report);
+    }
+  }
 
   yield();
 }

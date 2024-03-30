@@ -30,6 +30,7 @@ typedef struct
 
 typedef struct
 {
+    uint32_t last_update = 0;
     bambu_mqtt::filaments_t filaments;
     uint8_t filament_slot_id = FILAMENT_SLOT_ID_NONE;   // currently loaded filament
     bambu_mqtt::temperatures_t temperatures;

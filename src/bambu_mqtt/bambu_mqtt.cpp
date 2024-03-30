@@ -40,6 +40,7 @@ void convertFromJson (JsonVariantConst src, bambu_report_t &dst)
 {
     // reset all values to default
     dst = bambu_report_t();
+    dst.last_update = millis();
 
     // read all AMS filament slots
     for (JsonObjectConst print_ams_ams_0_tray_item : src[F("ams")][F("ams")][0][F("tray")].as<JsonArrayConst>()) 
@@ -163,25 +164,24 @@ bool bambu_printer::connect (const String ip, const String serial_num, const Str
         {
             dprintf("MQTT data received (%lu bytes):\n", length)
 
+            if (length < 1024)  // sometimes only part of the MQTT message gets received (maybe something else?) -> discard
+            {
+                #ifdef DEBUG_PRINT
+                unsigned int ii = 0;
+                for (; (ii < length) && (ii < 100); ii++)
+                    Serial.print((char) payload[ii]);
+
+                if (ii == 100)
+                    Serial.print("(...)");
+                
+                Serial.println();
+                #endif
+
+                return; 
+            }
+
             JsonDocument doc;
             DeserializationError error = deserializeJson(doc, payload, length, DeserializationOption::Filter(_bambu_mqtt::filter));
-
-            // #ifdef DEBUG_PRINT
-            // if (error)
-            // {
-            //     dprintf("Deserialize failed with %s\n", error.c_str());
-            // }
-            // else
-            // {
-            //     char printbuf[768];
-            //     size_t printlen = serializeJson(doc, printbuf);
-
-            //     for (size_t ii = 0; (ii < printlen) && (ii < sizeof(printbuf)); ii++)
-            //         Serial.print((char) printbuf[ii]);
-
-            //     Serial.println();
-            // }
-            // #endif
 
             if (!error)
             {
@@ -212,4 +212,9 @@ bool bambu_printer::is_connected (void) const
 bool bambu_printer::loop (void)
 {
     return (_data ? _data->mqtt_client.loop() : false);
+}
+
+const bambu_report_t& bambu_printer::report (void) const
+{
+    return _data->report;
 }

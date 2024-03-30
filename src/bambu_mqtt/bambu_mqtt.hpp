@@ -19,6 +19,9 @@ class bambu_printer
 
         /** @returns `true` when still connected, `false` otherwise */
         bool loop (void);   
+
+        /** @returns the last received report */
+        const bambu_report_t& report (void) const;
 };
 
 #endif
